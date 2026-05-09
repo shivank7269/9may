@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibTrack | Professional Library Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .active-link { background: #1e293b; border-left: 4px solid #3b82f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+    <!-- Sidebar Navigation -->
+    <aside class="fixed top-0 left-0 w-64 bg-slate-900 h-full text-white z-10 shadow-xl">
+        <div class="flex items-center justify-center h-24 border-b border-slate-800">
+            <div class="text-2xl font-black tracking-tighter text-blue-400">
+                <i class="fas fa-book-reader mr-2"></i>LIBTRACK
+            </div>
+        </div>
+        <nav class="mt-6 px-4 space-y-1">
+            <button onclick="showTab('inventory')" id="link-inventory" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition active-link">
+                <i class="fas fa-table mr-3"></i> Book Inventory
+            </button>
+            <button onclick="showTab('students')" id="link-students" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition">
+                <i class="fas fa-user-graduate mr-3"></i> Student Directory
+            </button>
+            <button onclick="showTab('transactions')" id="link-transactions" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition">
+                <i class="fas fa-hand-holding-heart mr-3"></i> Borrow / Return
+            </button>
+            <button onclick="showTab('logs')" id="link-logs" class="w-full flex items-center p-3 rounded-lg hover:bg-slate-800 transition">
+                <i class="fas fa-server mr-3 text-green-400"></i> MongoDB Logs
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="ml-64 p-10">
+
+        <!-- Dashboard Header -->
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800" id="current-title">Inventory Management</h1>
+                <p class="text-slate-500" id="current-desc">View, add, and manage library resources.</p>
+            </div>
+            <div class="flex space-x-3">
+                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border flex items-center">
+                    <span class="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
+                    <span class="text-sm font-semibold uppercase tracking-wider text-slate-600">Backend: Connected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- TAB: INVENTORY -->
+        <section id="tab-inventory" class="tab-content active space-y-6">
+            <!-- Top Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold mb-4 text-slate-700"><i class="fas fa-plus-circle mr-2"></i>Add New Book</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input id="b_title" type="text" placeholder="Title" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input id="b_author" type="text" placeholder="Author" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input id="b_isbn" type="text" placeholder="ISBN" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input id="b_count" type="number" placeholder="Copies" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <button onclick="addBook()" class="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Save to Database</button>
+                </div>
+                <div class="bg-blue-50 border-2 border-dashed border-blue-200 p-6 rounded-xl flex flex-col items-center justify-center">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-blue-400 mb-2"></i>
+                    <h3 class="font-bold text-blue-800">CSV Bulk Upload</h3>
+                    <p class="text-xs text-blue-600 mb-4">Sync Excel sheets with the system</p>
+                    <input type="file" id="csv_file" class="hidden" onchange="uploadCSV()">
+                    <label for="csv_file" class="bg-blue-600 text-white px-6 py-2 rounded-full cursor-pointer hover:bg-blue-700 shadow-md">Choose File</label>
+                </div>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="p-4 text-sm font-bold text-blue-600 uppercase">ID</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">ISBN</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Title</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Author</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Available</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="book-list-body" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB: STUDENTS -->
+        <section id="tab-students" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold mb-4 text-slate-700">Register Student</h3>
+                <div class="flex space-x-3">
+                    <input id="s_name" class="flex-1 border p-2 rounded" placeholder="Student Name">
+                    <input id="s_adm" class="flex-1 border p-2 rounded" placeholder="Admission Number">
+                    <input id="s_email" class="flex-1 border p-2 rounded" placeholder="Email Address">
+                    <button onclick="addStudent()" class="bg-slate-900 text-white px-6 py-2 rounded hover:bg-black">Register</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-4 text-sm font-bold text-blue-600 uppercase">ID</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Adm. ID</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Name</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Email</th>
+                            <th class="p-4 text-sm font-bold text-slate-600 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-list-body" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB: TRANSACTIONS -->
+        <section id="tab-transactions" class="tab-content">
+            <div class="max-w-md mx-auto bg-white p-10 rounded-2xl shadow-lg border border-slate-200 text-center">
+                <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Book Checkout</h2>
+                <p class="text-slate-500 mb-8 text-sm">Issue a book to a registered student</p>
+                <div class="space-y-4">
+                    <input id="trans_adm" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Student Admission ID">
+                    <input id="trans_book" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Book ID (Internal)">
+                    <button onclick="processBorrow()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 shadow-lg transition">Complete Borrowing</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: LOGS -->
+        <section id="tab-logs" class="tab-content">
+            <div class="bg-slate-900 rounded-2xl p-8 shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-green-400 font-mono text-lg">admin@libtrack:~/audit-logs$</h3>
+                    <button onclick="loadLogs()" class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded hover:text-white transition">REFRESH_DATA</button>
+                </div>
+                <pre id="log-output" class="font-mono text-sm text-green-300 h-96 overflow-y-auto leading-relaxed"></pre>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const API = "http://127.0.0.1:8000";
+
+        // TAB NAVIGATION LOGIC
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-link'));
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`link-${tab}`).classList.add('active-link');
+
+            const titles = { 'inventory': 'Book Inventory', 'students': 'Student Directory', 'transactions': 'Borrow/Return', 'logs': 'Audit Logs' };
+            const descs = { 'inventory': 'Manage library resources', 'students': 'Maintain student records', 'transactions': 'Issue and return books', 'logs': 'Real-time MongoDB tracking' };
+
+            document.getElementById('current-title').innerText = titles[tab];
+            document.getElementById('current-desc').innerText = descs[tab];
+
+            if(tab === 'inventory') loadBooks();
+            if(tab === 'students') loadStudents();
+            if(tab === 'logs') loadLogs();
+        }
+
+        // FETCH BOOKS
+        async function loadBooks() {
+            try {
+                const res = await fetch(`${API}/books`);
+                const books = await res.json();
+                document.getElementById("book-list-body").innerHTML = books.map(b => `
+                    <tr class="hover:bg-blue-50 transition">
+                        <td class="p-4 font-bold text-blue-600">${b.id}</td>
+                        <td class="p-4 text-xs font-mono text-slate-500">${b.isbn}</td>
+                        <td class="p-4 font-semibold">${b.title}</td>
+                        <td class="p-4 text-slate-600">${b.author}</td>
+                        <td class="p-4">
+                            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">
+                                ${b.available_copies} / ${b.total_copies}
+                            </span>
+                        </td>
+                        <td class="p-4 space-x-2">
+                            <button onclick="deleteBook(${b.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error("Error loading books"); }
+        }
+
+        // ADD BOOK
+        async function addBook() {
+            const data = {
+                title: document.getElementById('b_title').value,
+                author: document.getElementById('b_author').value,
+                isbn: document.getElementById('b_isbn').value,
+                total_copies: parseInt(document.getElementById('b_count').value)
+            };
+            const res = await fetch(`${API}/books`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if(res.ok) { alert("Book added!"); loadBooks(); }
+        }
+
+        // DELETE BOOK
+        async function deleteBook(id) {
+            if(!confirm("Are you sure?")) return;
+            await fetch(`${API}/books/${id}`, { method: 'DELETE' });
+            loadBooks();
+        }
+
+        // CSV UPLOAD
+        async function uploadCSV() {
+            const file = document.getElementById('csv_file').files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            await fetch(`${API}/books/upload`, { method: 'POST', body: formData });
+            alert("Sync Complete!");
+            loadBooks();
+        }
+
+        // FETCH STUDENTS
+        async function loadStudents() {
+            const res = await fetch(`${API}/students`);
+            const students = await res.json();
+            document.getElementById("student-list-body").innerHTML = students.map(s => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-4 font-bold text-blue-600">${s.id}</td>
+                    <td class="p-4 font-semibold">${s.admission_number}</td>
+                    <td class="p-4">${s.name}</td>
+                    <td class="p-4 text-slate-500 text-sm">${s.email}</td>
+                    <td class="p-4"><button onclick="deleteStudent(${s.id})" class="text-red-400"><i class="fas fa-user-times"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        // ADD STUDENT
+        async function addStudent() {
+            const data = {
+                name: document.getElementById('s_name').value,
+                admission_number: document.getElementById('s_adm').value,
+                email: document.getElementById('s_email').value,
+                phone_number: "0000"
+            };
+            await fetch(`${API}/students`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            loadStudents();
+        }
+
+        // DELETE STUDENT
+        async function deleteStudent(id) {
+            if(!confirm("Remove student?")) return;
+            await fetch(`${API}/students/${id}`, { method: 'DELETE' });
+            loadStudents();
+        }
+
+        // BORROW PROCESS
+        async function processBorrow() {
+            const data = {
+                admission_number: document.getElementById('trans_adm').value,
+                book_id: parseInt(document.getElementById('trans_book').value)
+            };
+            const res = await fetch(`${API}/borrow`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            alert(res.ok ? "Success: Book Issued" : "Error: " + result.detail);
+        }
+
+        // FETCH LOGS
+        async function loadLogs() {
+            const res = await fetch(`${API}/logs`);
+            const logs = await res.json();
+            document.getElementById('log-output').innerText = JSON.stringify(logs, null, 4);
+        }
+
+        // INITIAL LOAD
+        loadBooks();
+    </script>
+</body>
+</html>

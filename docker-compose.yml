@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Overrides the Atlas URL to use the local container database below
+      - MONGO_URI=mongodb://mongodb_container:27017/libtrack_docker
+    depends_on:
+      - mongodb_container
+
+  mongodb_container:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
